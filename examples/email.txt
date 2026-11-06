@@ -1,0 +1,22 @@
+Auftrag demo-auftrag-01 · Erstanschreiben
+Anlass: Bewerbung für ein fiktives Praxissemester
+Ziel: Individuelle Entwürfe zur Prüfung
+Ausgewählte Kontakte und Anlagen:
+[
+  {
+    "entryId": "demo-kontakt-a",
+    "label": "Alex Beispiel · Nord GmbH (fiktiv)",
+    "files": "Lebenslauf-A.pdf"
+  },
+  {
+    "entryId": "demo-kontakt-b",
+    "label": "Alex Beispiel · Süd GmbH (fiktiv)",
+    "files": "Portfolio-B.pdf"
+  },
+  {
+    "entryId": "demo-firma-c",
+    "label": "Beispielfirma ohne bekannte Adresse",
+    "files": ""
+  }
+]
+Durchsuche mein verbundenes Gmail ausschließlich zu diesen Kontakten und diesem Anlass. Lies einschlägige Verläufe. Fehlt ein Ansprechpartner, prüfe öffentliche Arbeitgeberquellen und nenne die Fundstelle. Erfinde keine Adresse. Sammle unklare Treffer als Rückfrage. Prüfe für jede Anlage die richtige und tatsächlich verfügbare Datei. Schreibe individuelles natürliches Deutsch ohne Standardfloskeln, erfundene Qualifikationen oder Nacherzählung meines Lebenslaufs. Zeige je Nachricht Empfänger, Betreff, vollständigen Text und Anlagen. Erst nach Einzelfreigabe oder Bestätigung einer konkret angezeigten Gruppe senden. Separate E-Mail je Person. Trenne Entwurf, Freigabe und bestätigten Versand. Unklaren Versand vor Wiederholung prüfen. Gib Zusammenfassung und JSON zurück: {"orderId":"demo-auftrag-01","results":[{"entryId":"ID aus Liste","status":"Entwurf|Freigegeben|Gesendet|Unklar|Antwort geprüft","at":"ISO-Zeit mit Zeitzone","next":"Nächster Schritt","gmailId":"bei Versand bestätigte Gmail-ID","checkedAt":"nur bei tatsächlicher Postfachprüfung"}]}.
