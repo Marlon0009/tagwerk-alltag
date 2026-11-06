@@ -230,7 +230,8 @@ function today() {
       p.fixed
         .filter(
           (e) =>
-            e.type !== "Schlaf" && (!e.end || new Date(e.end) >= new Date()),
+            ["Dienst", "Termin", "Frist"].includes(e.type) &&
+            (!e.end || new Date(e.end) >= new Date()),
         )
         .sort((a, b) =>
           (a.start || a.day).localeCompare(b.start || b.day),
@@ -317,7 +318,10 @@ function today() {
             "</span>",
           () =>
             s.entries.some((x) => x.id === e.id)
-              ? detail(s.entries.find((x) => x.id === e.id))
+              ? detail(
+                  s.entries.find((x) => x.id === e.id),
+                  e.suggest ? e.slot : "",
+                )
               : edit(e),
           "item",
         ),
@@ -329,6 +333,14 @@ function today() {
         p.fixed.slice(0, j).some((o) => e.start < o.end && e.end > o.start),
       )
       .map((e) => btn("Zeitkonflikt prüfen · " + esc(e.title), () => edit(e)))
+      .join("") +
+    p.tasks
+      .filter(
+        (t) => !p.blocks.some((b) => b.id === t.id && b.type === "Aufgabe"),
+      )
+      .map((t) =>
+        btn("Kein freier Zeitblock · " + esc(t.title), () => detail(t)),
+      )
       .join("") +
     remindersFor(s)
       .map((t) => '<p class="panel">' + esc(t) + "</p>")
@@ -372,7 +384,7 @@ function item(e, j) {
     "item",
   );
 }
-function detail(e) {
+function detail(e, proposedSlot = "") {
   modal(
     e.title,
     '<div class="label">' +
@@ -390,6 +402,11 @@ function detail(e) {
       (e.module ? " · Modul " + esc(e.module) : "") +
       "</p>" +
       (e.goal ? "<p>Ziel · " + esc(e.goal) + "</p>" : "") +
+      (proposedSlot
+        ? btn("Zeitblock um " + esc(proposedSlot) + " übernehmen", () =>
+            put({ ...e, acceptedDay: e.day, acceptedTime: proposedSlot }),
+          )
+        : "") +
       (e.contact
         ? Object.entries(e.contact)
             .filter(([, v]) => v)
