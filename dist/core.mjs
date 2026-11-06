@@ -232,7 +232,21 @@ export function plan(s, d = date(), now = new Date()) {
     blocks.push(recovery);
     fixed.push(recovery);
   }
+  for (const t of tasks.filter((t) => t.acceptedDay === d && t.acceptedTime)) {
+    const start = d + "T" + t.acceptedTime;
+    const finish = new Date(
+      +new Date(start) + (s.energy === "Minimum" ? 5 : t.minutes || 20) * 60000,
+    );
+    const block = {
+      ...t,
+      start,
+      end: date(finish) + "T" + finish.toTimeString().slice(0, 5),
+    };
+    blocks.push(block);
+    fixed.push(block);
+  }
   for (const t of tasks) {
+    if (t.acceptedDay === d && t.acceptedTime) continue;
     let len =
       (s.energy === "Minimum"
         ? 5

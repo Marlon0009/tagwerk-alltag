@@ -849,7 +849,12 @@ export function extended({
           .filter((e) => e.type === "Gewicht" && typeof e.value === "number")
           .sort((a, b) => b.day.localeCompare(a.day)),
         recent = w.filter((e) => e.day >= plus(date(), -6) && e.day <= date());
-      let last = [...arr].reverse().filter((e) => e.type === "Training");
+      let last = [...arr]
+        .reverse()
+        .filter((e) => e.type === "Training" && !e.origin)
+        .sort((a, b) =>
+          (b.occurred || b.day).localeCompare(a.occurred || a.day),
+        );
       return (
         '<div class="panel"><small>Gewicht · Ziel ' +
         esc(state().goal) +
