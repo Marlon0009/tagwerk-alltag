@@ -238,10 +238,14 @@ export function plan(s, d = date(), now = new Date()) {
         ? 5
         : t.minutes || (s.energy === "Viel Energie" ? 45 : 20)) * 60000;
     for (const f of fixed
-      .filter((e) => e.start && e.end)
-      .sort((a, b) => a.start.localeCompare(b.start)))
-      if (cursor < new Date(f.end) && +cursor + len > +new Date(f.start))
-        cursor = new Date(f.end);
+      .filter((e) => e.start)
+      .sort((a, b) => a.start.localeCompare(b.start))) {
+      const start = new Date(f.start);
+      const end = f.end
+        ? new Date(f.end)
+        : new Date(+start + (f.type === "Termin" ? 30 : 1) * 60000);
+      if (cursor < end && +cursor + len > +start) cursor = end;
+    }
     if (date(new Date(+cursor + len)) === d) {
       blocks.push({
         ...t,

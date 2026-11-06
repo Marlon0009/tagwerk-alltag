@@ -52,6 +52,19 @@ export function health(rows, existing) {
         origin: r.source,
         rawStart: r.start,
         rawEnd: r.end,
+        ...(r.type === "Schlaf"
+          ? {
+              start:
+                date(new Date(r.start)) +
+                "T" +
+                new Date(r.start).toTimeString().slice(0, 5),
+              end:
+                date(new Date(r.end)) +
+                "T" +
+                new Date(r.end).toTimeString().slice(0, 5),
+              minutes: r.value,
+            }
+          : {}),
         note: r.start + " – " + r.end,
       }),
     );

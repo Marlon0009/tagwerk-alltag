@@ -1,5 +1,7 @@
 # Tagwerk für Marlon
 
+**Auf dem iPhone:** [Tagwerk in Safari öffnen](https://marlon0009.github.io/tagwerk-alltag/), über **Teilen → Zum Home-Bildschirm** installieren und einmal online vom neuen Symbol starten. **Beispiel · Einrichten** öffnet die persönliche Einrichtung.
+
 ## Start in zwei Minuten
 
 1. Am Computer mit Node.js 22 oder neuer im Projektordner `npm start` ausführen. Die App läuft unter http://localhost:5173. Der Kern verwendet Browserfunktionen, die Tests verwenden Playwright als Entwicklungsabhängigkeit.
@@ -10,6 +12,8 @@
 Die erste Ansicht ist ein fiktiver, bearbeitbarer Beispieltagesplan. Die eigentliche Einrichtung ersetzt ihn. Die App benötigt weder Login noch Schlüssel. Mit **+** Text eingeben und die Interpretation prüfen. Das Mikrofon der iPhone-Tastatur nutzt die Diktateinstellungen des Geräts. Unter **Bereiche → Einstellungen & Sicherung** sind alle Verwaltungsfunktionen auch mobil erreichbar.
 
 ## Heute und Verlauf
+
+Ein Termin ohne Endzeit reserviert im Plan 30 Minuten. Nach einer Nachtschicht ohne eingetragenen Schlaf schlägt Tagwerk zunächst zwei Stunden Erholung zum Bearbeiten vor. Diese Dauer ist ein veränderbarer Planungsplatzhalter. Das Feld für den tatsächlichen Trainingsbeginn und der zugeordnete Wachabschnitt können unterschiedliche Daten haben.
 
 Ein Tipp auf eine Priorität zeigt den ersten Schritt. Beim Unterbrechen den Wiedereinstieg speichern. Nach einem freien Tag frühere Aufgaben gesammelt auf heute legen, pausieren oder streichen. Bei einem Training nach Mitternacht das Feld **Wachabschnitt / Plandatum** auf den Tag des Aufstehens setzen. Bei Schichten und Schlaf Beginn und Ende mit beiden Daten eintragen. In einem Bereich zwischen Vorschlägen und automatischen Zeitblöcken wechseln. Ein Zeitkonflikt öffnet den betroffenen Eintrag zur Entscheidung.
 

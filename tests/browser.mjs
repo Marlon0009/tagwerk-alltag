@@ -63,13 +63,11 @@ try {
   assert.ok(!backup.includes("Latzug"));
   await settings();
   await click("Wiederherstellen");
-  await p
-    .locator("[name=file]")
-    .setInputFiles({
-      name: "backup.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(backup),
-    });
+  await p.locator("[name=file]").setInputFiles({
+    name: "backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(backup),
+  });
   await fill("pw", "falsch");
   await click("Vorschau prüfen");
   await p.getByRole("alert").waitFor();
@@ -129,13 +127,11 @@ try {
   await cp
     .getByRole("button", { name: "Wiederherstellen", exact: true })
     .click();
-  await cp
-    .locator("[name=file]")
-    .setInputFiles({
-      name: "backup.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(backup),
-    });
+  await cp.locator("[name=file]").setInputFiles({
+    name: "backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(backup),
+  });
   await cp.locator("[name=pw]").fill("fiktives-testpasswort");
   await cp.getByText("Vorschau prüfen", { exact: true }).click();
   await cp.getByText("Diesen Stand wiederherstellen").click();
@@ -143,6 +139,64 @@ try {
   await cp.locator("aside").getByText("Training", { exact: true }).click();
   await cp.getByRole("button", { name: /Latzug · zuletzt 55 kg/ }).waitFor();
   console.log("OK: leere Installation aus Datei wiederhergestellt");
+  await cp.evaluate(async () => {
+    const db = await new Promise((ok) => {
+      const request = indexedDB.open("tagwerk", 1);
+      request.onsuccess = () => ok(request.result);
+    });
+    await new Promise((ok) => {
+      const tx = db.transaction("data", "readwrite");
+      tx.objectStore("data").put(
+        {
+          schema: 1,
+          entries: [
+            {
+              id: "altbestand",
+              day: "2026-10-01",
+              title: "Alte Notiz",
+              area: "Studium",
+              type: "Notiz",
+            },
+          ],
+        },
+        "current",
+      );
+      tx.oncomplete = ok;
+    });
+    db.close();
+  });
+  await cp.reload();
+  await cp.locator("aside").getByText("Verlauf", { exact: true }).click();
+  await cp.getByRole("button", { name: /Alte Notiz/ }).click();
+  await cp.getByRole("button", { name: "Bearbeiten", exact: true }).click();
+  await cp.locator("[name=note]").fill("Nach Update bearbeitet");
+  await cp.getByRole("button", { name: "Eintrag speichern" }).click();
+  await cp.getByText("Eintrag gespeichert", { exact: true }).waitFor();
+  console.log("OK: IndexedDB-Altbestand nach Migration bearbeitbar");
+  await cp.locator("aside").getByText("Karriere", { exact: true }).click();
+  await cp.getByRole("button", { name: "E-Mail-Auftrag", exact: true }).click();
+  for (const [name, value] of Object.entries({
+    people: "Firma Beispiel",
+    goal: "Entwurf",
+    reason: "Anfrage",
+  }))
+    await cp.locator('[name="' + name + '"]').fill(value);
+  await cp.getByText("Auftrag erstellen", { exact: true }).click();
+  await cp.evaluate(() =>
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: () =>
+          Promise.reject(new DOMException("Abgelehnt", "NotAllowedError")),
+      },
+    }),
+  );
+  await cp.getByText("Auftrag kopieren", { exact: true }).click();
+  await cp
+    .getByRole("alert")
+    .getByText(/Text ausgewählt/)
+    .waitFor();
+  console.log("OK: abgelehnte Zwischenablage mit manueller Kopierauswahl");
   assert.deepEqual(errors, []);
 } finally {
   await b.close();

@@ -17,6 +17,8 @@ Alle aufgeführten Tests verwenden fiktive Daten. Testdatum 6. November 2026.
 
 ## Verbleibende Grenzen
 
+Zusätzlich im Browser bestätigt: Ein IndexedDB-Bestand mit Schema 1 lässt sich nach dem Update öffnen, bearbeiten und erneut speichern. Bei simulierter Ablehnung der Zwischenablage markiert die App den vollständigen Auftrag zum manuellen Kopieren.
+
 - Google-Sitzung und Verschlüsselungspasswort für automatische Sicherungen gelten pro geöffneter Sitzung. Nach Neustart meldet die Drive-Ansicht den Anmeldebedarf.
 - Erinnerungen werden bei geöffneter App geprüft. Die tatsächliche Alarmzustellung übernimmt nach Import und Freigabe der Geräte-Kalender.
 - Der Health-Import verwirft überlappende Daten konservativ. Teilintervalle werden nicht statistisch rekonstruiert.
