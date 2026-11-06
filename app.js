@@ -137,7 +137,7 @@ async function save(next, protect = false) {
       st = tx.objectStore("data"),
       r = st.get("current");
     r.onsuccess = () => {
-      if (r.result && r.result.rev !== expected) {
+      if (r.result && (r.result.rev ?? 0) !== expected) {
         tx.abort();
         return;
       }
@@ -384,6 +384,10 @@ function detail(e) {
       " " +
       esc(e.start?.slice(11)) +
       (e.end ? " – " + esc(e.end) : "") +
+      (e.occurred
+        ? " · Erfasst für " + esc(e.occurred.replace("T", " "))
+        : "") +
+      (e.module ? " · Modul " + esc(e.module) : "") +
       "</p>" +
       (e.goal ? "<p>Ziel · " + esc(e.goal) + "</p>" : "") +
       (e.contact
@@ -460,6 +464,8 @@ function detail(e) {
   );
 }
 function summary(e) {
+  if (e.origin && e.unit) return e.value + " " + e.unit;
+  if (e.type === "Gewicht" && e.value == null) return "";
   return e.type === "Training"
     ? [
         e.value != null ? e.value + " kg" : "",
@@ -503,6 +509,17 @@ function edit(e) {
       field("Titel", "title", e.title) +
       field("Bereich", "area", e.area, [...areas, "Dienst"]) +
       field("Wachabschnitt / Plandatum", "day", e.day, "date") +
+      (t === "Training"
+        ? field(
+            "Tatsächlicher Trainingsbeginn",
+            "occurred",
+            e.occurred || date() + "T" + new Date().toTimeString().slice(0, 5),
+            "datetime-local",
+          )
+        : "") +
+      (e.area === "Studium"
+        ? field("Modul (optional)", "module", e.module)
+        : "") +
       (["Dienst", "Termin", "Schlaf", "Frist"].includes(t)
         ? field(
             "Beginn",
@@ -587,11 +604,32 @@ function edit(e) {
             throw Error("Bitte ein positives Gewicht eintragen.");
           if (!x.title || !x.day)
             throw Error("Bitte Titel und Datum ergänzen.");
-          for (let k of ["start", "end", "step", "category", "angle", "due"])
+          for (let k of [
+            "start",
+            "end",
+            "step",
+            "category",
+            "angle",
+            "due",
+            "module",
+            "occurred",
+          ])
             if (dlg.querySelector('[name="' + k + '"]')) x[k] = val(k);
           for (let k of ["minutes", "sets", "reps", "value"])
             if (dlg.querySelector('[name="' + k + '"]'))
               x[k] = val(k) === "" ? null : Number(val(k));
+          if (
+            ["minutes", "sets", "reps"].some(
+              (k) => x[k] != null && (!Number.isFinite(x[k]) || x[k] <= 0),
+            )
+          )
+            throw Error(
+              "Bitte positive Minuten, Sätze und Wiederholungen eintragen.",
+            );
+          if (["Dienst", "Schlaf"].includes(t) && (!x.start || !x.end))
+            throw Error("Bitte Beginn und Ende angeben.");
+          if (["Dienst", "Schlaf", "Termin"].includes(t) && x.start)
+            x.day = x.start.slice(0, 10);
           if (x.end && x.end <= x.start)
             throw Error("Das Ende muss nach dem Beginn liegen.");
           if (t === "Kontakt") {
@@ -612,7 +650,10 @@ function edit(e) {
           }
           let file = dlg.querySelector("[name=photo]")?.files[0];
           if (file) {
-            if (!file.type.startsWith("image/") || file.size > 6000000)
+            if (
+              !/^image\/(jpeg|png|webp|gif|heic|heif)$/.test(file.type) ||
+              file.size > 6000000
+            )
               throw Error("Bitte ein Bild unter 6 MB wählen.");
             x.photo = await new Promise((ok, no) => {
               let r = new FileReader();
@@ -799,7 +840,9 @@ function history() {
         e.day <= date() &&
         !["Dienst", "Aufgabe", "Termin", "Frist"].includes(e.type),
     ),
-    done = s.entries.filter((e) => e.completed >= plus(date(), -6));
+    done = s.entries.filter(
+      (e) => e.completed >= plus(date(), -6) && e.completed <= date(),
+    );
   return (
     '<div class="headline"><div><div class="label">Letzte sieben Tage</div><h1>Verlauf</h1></div></div><div class="panel"><h2>Wochenrückblick</h2><p>' +
     new Set([...recent.map((e) => e.day), ...done.map((e) => e.completed)])
@@ -808,7 +851,9 @@ function history() {
     done.length +
     " Aufgaben erledigt</p>" +
     areas
-      .filter((a) => recent.some((e) => e.area === a))
+      .filter(
+        (a) => [...recent, ...done].some((e) => e.area === a) || s.focus === a,
+      )
       .map(
         (a) => "<p>" + esc(a) + " · " + esc(metrics(s, a).join(" · ")) + "</p>",
       )

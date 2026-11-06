@@ -1,4 +1,5 @@
-const cache = "tagwerk-v1.0.0",
+const prefix = "tagwerk:" + self.registration.scope + ":",
+  cache = prefix + "1.0.1",
   assets = [
     "./",
     "index.html",
@@ -24,7 +25,7 @@ self.addEventListener("activate", (ev) =>
       .then((keys) =>
         Promise.all(
           keys
-            .filter((k) => k.startsWith("tagwerk-") && k !== cache)
+            .filter((k) => k.startsWith(prefix) && k !== cache)
             .map((k) => caches.delete(k)),
         ),
       )
@@ -38,13 +39,13 @@ self.addEventListener("fetch", (ev) => {
   )
     ev.respondWith(
       caches
-        .match(ev.request)
+        .match(ev.request, { cacheName: cache })
         .then(
           (r) =>
             r ||
             fetch(ev.request).catch(() =>
               ev.request.mode === "navigate"
-                ? caches.match("./index.html")
+                ? caches.match("./index.html", { cacheName: cache })
                 : Response.error(),
             ),
         ),

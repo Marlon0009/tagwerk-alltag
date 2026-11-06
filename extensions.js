@@ -278,6 +278,10 @@ export function extended({
       ...opts,
       headers: { Authorization: "Bearer " + token, ...opts.headers },
     });
+    if (r.status === 401) {
+      token = "";
+      throw Error("Google-Anmeldung abgelaufen. Erneut freigeben.");
+    }
     if (!r.ok) throw Error("Google Drive meldet HTTP " + r.status);
     return r.json();
   }
@@ -288,26 +292,35 @@ export function extended({
     try {
       let s = state(),
         data = await seal(backupData(), pass),
-        form = new FormData();
-      form.append(
-        "metadata",
-        new Blob(
-          [
-            JSON.stringify({
-              name: "tagwerk-" + new Date().toISOString() + ".json",
-              parents: ["appDataFolder"],
-            }),
-          ],
-          { type: "application/json" },
-        ),
-      );
-      form.append(
-        "file",
-        new Blob([JSON.stringify(data)], { type: "application/json" }),
-      );
+        boundary = "tagwerk_" + uid();
+      const metadata = {
+        name: "tagwerk-" + new Date().toISOString() + ".json",
+        parents: ["appDataFolder"],
+        mimeType: "application/json",
+      };
+      const body =
+        [metadata, data]
+          .map(
+            (part) =>
+              "--" +
+              boundary +
+              "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" +
+              JSON.stringify(part) +
+              "\r\n",
+          )
+          .join("") +
+        "--" +
+        boundary +
+        "--";
       let result = await api(
         "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
-        { method: "POST", body: form },
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "multipart/related; boundary=" + boundary,
+          },
+          body,
+        },
       );
       if (!result.id) throw Error("Upload ohne Dateibestätigung.");
       await save({
@@ -370,6 +383,11 @@ export function extended({
           google.accounts.oauth2
             .initTokenClient({
               client_id: client,
+              error_callback: () => {
+                driveError =
+                  "Freigabe unterbrochen. Google-Freigabe erneut öffnen.";
+                drive();
+              },
               scope: "https://www.googleapis.com/auth/drive.appdata",
               callback: async (r) => {
                 if (!r.access_token) {
@@ -789,9 +807,9 @@ export function extended({
                   esc(
                     state().hideKcal
                       ? m.ingredients
-                          ?.split("\\n")
+                          ?.split("\n")
                           .map((l) => l.split("|").slice(0, 2).join(" · "))
-                          .join("\\n")
+                          .join("\n")
                       : m.ingredients,
                   ) +
                   "</p>" +
