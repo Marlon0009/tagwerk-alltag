@@ -364,7 +364,7 @@ function item(e, j) {
       '<span class="tile ' +
       ai(e.area) +
       '">' +
-      icon(ai(e.area)) +
+      (e.type === "Pflegeprodukt" && e.photo ? '<img style="width:100%;height:100%;object-fit:contain" alt="" src="' + esc(e.photo) + '">' : icon(ai(e.area))) +
       "</span><span><strong>" +
       esc(e.title) +
       "</strong><small>" +
@@ -501,6 +501,7 @@ function summary(e) {
             : "";
 }
 const types = [
+  "Pflegeprodukt",
   "Notiz",
   "Aufgabe",
   "Dienst",
@@ -524,6 +525,7 @@ function edit(e) {
     "Eintrag prüfen",
     field("Eintragstyp", "type", t, types) +
       field("Titel", "title", e.title) +
+      (t === "Pflegeprodukt" ? field("Verpackungsfoto dieser Variante (optional)", "photo", "", "file") : "") +
       field("Bereich", "area", e.area, [...areas, "Dienst"]) +
       field("Wachabschnitt / Plandatum", "day", e.day, "date") +
       (t === "Training"
@@ -918,7 +920,9 @@ function sections() {
       () =>
         edit(
           entry(
-            area === "Haare & Kopfhaut"
+            area === "Hautpflege"
+              ? "Pflegeprodukt"
+              : area === "Haare & Kopfhaut"
               ? "Pflege"
               : area === "Karriere"
                 ? "Kontakt"
