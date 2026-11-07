@@ -10,6 +10,7 @@ export const areas = [
   "Beziehungen",
   "Kreative Projekte",
   "Hautpflege",
+  "Zahnpflege",
   "Auftreten",
   "Sprache",
   "Fähigkeiten",

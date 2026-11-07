@@ -759,7 +759,187 @@ export function extended({
         }),
     );
   }
+  const sessions = {
+    A: [
+      "Beinpresse",
+      "Sitzendes Kabelrudern",
+      "Brustpresse",
+      "Beinbeuger",
+      "Seitheben am Kabel",
+    ],
+    B: [
+      "Beinpresse",
+      "Latzug",
+      "Schräge Brustpresse",
+      "Beinbeuger",
+      "Wadenheben",
+    ],
+  };
+  const guidance = {
+    Beinpresse:
+      "Rücken anlehnen, Füße stabil aufsetzen. Nur so tief gehen, wie das Becken an der Lehne bleibt.",
+    "Sitzendes Kabelrudern":
+      "Füße abstützen und den Griff ohne Schwung zu den unteren Rippen ziehen.",
+    Brustpresse:
+      "Sitz so einstellen, dass die Griffe etwa auf mittlerer Brusthöhe liegen. Kontrolliert nach vorn drücken.",
+    Beinbeuger:
+      "Kniegelenk auf Höhe der Drehachse einstellen und das Polster knapp oberhalb der Ferse anlegen.",
+    "Seitheben am Kabel":
+      "Kabel tief einstellen und den Arm bei ruhigem Oberkörper seitlich anheben.",
+    Latzug:
+      "Oberschenkelpolster einstellen. Griff kontrolliert vor dem Körper Richtung obere Brust ziehen.",
+    "Schräge Brustpresse":
+      "Sitz und Griffe mit dem Studiopersonal auf deine Körpergröße einstellen und ohne Schwung drücken.",
+    Wadenheben:
+      "Vorfüße stabil aufsetzen und die Fersen langsam heben und senken.",
+  };
+  function workout() {
+    const s = state();
+    const letter = s.nextWorkout === "B" ? "B" : "A";
+    const moves = sessions[letter];
+    const cursor = Math.min(Math.max(0, s.workoutIndex || 0), moves.length - 1);
+    const move = moves[cursor];
+    const last = s.entries
+      .filter((e) => e.type === "Training" && e.title === move && !e.origin)
+      .sort((a, b) =>
+        (b.occurred || b.day).localeCompare(a.occurred || a.day),
+      )[0];
+    modal(
+      "Einheit " + letter,
+      "<p>" +
+        (cursor + 1) +
+        " von " +
+        moves.length +
+        "</p><h3>" +
+        esc(move) +
+        "</h3><p>" +
+        guidance[move] +
+        "</p>" +
+        (last
+          ? "<p>Zuletzt · " +
+            esc(summary(last)) +
+            " · Einstellung " +
+            esc(last.setting || "offen") +
+            "</p>"
+          : "<p>Beim ersten Besuch Sitz, Polster und Bewegung vor Ort zeigen lassen. Mit leichtem Probesatz beginnen.</p>") +
+        field("Sitzeinstellung / Polster", "setting", last?.setting) +
+        field("Gewicht in kg", "weight", last?.value, "number") +
+        field(
+          "Wiederholungen je Satz, z. B. 10, 9",
+          "performed",
+          last?.performed || "",
+        ) +
+        btn(
+          "Sätze speichern",
+          async () => {
+            const performed = val("performed").trim();
+            const reps = performed.split(/[,/ ]+/).map(Number);
+            const weight = Number(val("weight"));
+            if (
+              !val("weight").trim() ||
+              !Number.isFinite(weight) ||
+              weight < 0 ||
+              reps.some((n) => !Number.isInteger(n) || n <= 0)
+            )
+              throw Error("Gewicht und tatsächliche Wiederholungen ergänzen.");
+            const x = entry("Training", move, {
+              area: "Training",
+              setting: val("setting"),
+              performed,
+              sets: reps.length,
+              reps: reps[0],
+              value: weight,
+              note:
+                "Wiederholungen je Satz: " +
+                performed +
+                " · Einstellung: " +
+                val("setting"),
+            });
+            const end = cursor + 1 === moves.length;
+            await save({
+              ...state(),
+              entries: [...state().entries, x],
+              workoutIndex: end ? 0 : cursor + 1,
+              nextWorkout: end ? (letter === "A" ? "B" : "A") : letter,
+            });
+            if (end) {
+              dlg.close();
+              toast("Einheit abgeschlossen");
+            } else workout();
+          },
+          "primary",
+        ) +
+        btn("Einheit kurz abschließen", async () => {
+          if (cursor === 0)
+            throw Error(
+              "Erst das erste Gerät erfassen oder die Einheit schließen.",
+            );
+          await save({
+            ...state(),
+            workoutIndex: 0,
+            nextWorkout: letter === "A" ? "B" : "A",
+          });
+          dlg.close();
+        }),
+    );
+  }
+  function products(arr) {
+    return (
+      arr
+        .filter((e) => e.type === "Pflegeprodukt")
+        .map((p) => {
+          const lengths = p.useDays || [];
+          const expected =
+            p.opened && lengths.length
+              ? plus(
+                  p.opened,
+                  Math.round(
+                    lengths.reduce((a, b) => a + b, 0) / lengths.length,
+                  ),
+                )
+              : "";
+          async function update(changes) {
+            await put({ ...p, ...changes });
+          }
+          return (
+            '<section class="panel"><h3>' +
+            esc(p.title) +
+            "</h3><p>" +
+            esc(
+              p.low
+                ? "Fast leer"
+                : p.opened
+                  ? "Geöffnet am " + p.opened
+                  : "Ungeöffnet oder unbekannt",
+            ) +
+            (expected ? " · geschätzt bis " + esc(expected) : "") +
+            '</p><div class="toolbar">' +
+            (!p.opened
+              ? btn("Packung geöffnet", () =>
+                  update({ opened: date(), low: false }),
+                )
+              : "") +
+            (!p.low ? btn("Fast leer", () => update({ low: true })) : "") +
+            (p.opened
+              ? btn("Aufgebraucht", () => {
+                  const days =
+                    (Date.parse(date()) - Date.parse(p.opened)) / 86400000;
+                  return update({
+                    opened: "",
+                    low: true,
+                    useDays: days > 0 ? [...lengths, days] : lengths,
+                  });
+                })
+              : "") +
+            "</div></section>"
+          );
+        })
+        .join("") +
+      '<p><a href="https://www.rossmann.de/de/angebote/m/angebote" target="_blank" rel="noopener">Rossmann-Angebote</a> · <a href="https://www.mueller.de/c/online-angebote/online-angebote-drogerie/" target="_blank" rel="noopener">Müller-Angebote</a></p>'
+    );
+  }
   function area(a, arr) {
+    if (a === "Hautpflege") return products(arr);
     if (a === "Haare & Kopfhaut")
       return (
         '<div class="actions">' +
@@ -856,6 +1036,7 @@ export function extended({
           (b.occurred || b.day).localeCompare(a.occurred || a.day),
         );
       return (
+        btn("Training starten", workout, "primary") +
         '<div class="panel"><small>Gewicht · Ziel ' +
         esc(state().goal) +
         ' kg</small><p class="metric">' +
@@ -947,5 +1128,5 @@ export function extended({
       );
     return "";
   }
-  return { area, calendar, settings, changed };
+  return { area, calendar, settings, changed, workout };
 }

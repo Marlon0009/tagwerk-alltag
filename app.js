@@ -96,6 +96,7 @@ const field = (label, n, v = "", type = "text") =>
         ">") +
   "</label>";
 function modal(t, html) {
+  dlg.classList.toggle("menusheet", t === "Menü");
   dlg.innerHTML =
     '<header class="pair"><h2>' +
     esc(t) +
@@ -184,6 +185,24 @@ function nav(m = false) {
     )
     .join("");
 }
+function menu() {
+  const jump = (p, a = "") => {
+    dlg.close();
+    go(p, a);
+  };
+  modal(
+    "Menü",
+    [
+      btn("Eintrag schreiben", quick),
+      btn("Heute", () => jump("Heute")),
+      btn("Verlauf", () => jump("Verlauf")),
+      btn("Meine Bereiche", () => jump("Bereiche")),
+      btn("Training starten", ext.workout),
+      btn("Pflegeprodukte", () => jump("Bereiche", "Hautpflege")),
+      btn("Einstellungen und Daten", settings),
+    ].join(""),
+  );
+}
 function render() {
   document.querySelector("#app").innerHTML =
     '<div class="shell"><aside><div class="brand"><i class="mark"></i>Tagwerk</div><div class="sidecap">Arbeitsplatz</div>' +
@@ -211,6 +230,7 @@ function render() {
           'deskSetup" aria-label="Einstellungen',
         )) +
     "</div></div>" +
+    btn("☰", menu, 'menukey" aria-label="Menü öffnen') +
     (page === "Heute" ? today() : page === "Verlauf" ? history() : sections()) +
     '</main><nav aria-label="Hauptnavigation" class="mobile">' +
     nav(true) +
@@ -265,7 +285,7 @@ function today() {
           "</option>",
       )
       .join("") +
-    '</select></label></div><section class="hero"><div><div class="label row">' +
+    '</select></label></div><form id="daynote"><input aria-label="Eintrag schreiben" placeholder="Eintrag schreiben …" required><button aria-label="Eingabe prüfen">↵</button></form><section class="hero"><div><div class="label row">' +
     icon("moon") +
     " Nächste Verpflichtung</div><h2>" +
     esc(f?.title || "Zeit für deinen Plan") +
@@ -285,9 +305,7 @@ function today() {
       () => (f ? detail(f) : edit(entry("Termin", ""))),
       'heroOpen" aria-label="Verpflichtung öffnen',
     ) +
-    '</section><div class="sectionhead"><h2>Deine Prioritäten</h2><span class="count">' +
-    String(p.tasks.length).padStart(2, "0") +
-    ' / 03</span></div><div class="prioritylist">' +
+    '</section><div class="sectionhead"><h2>Prioritäten</h2></div><div class="prioritylist">' +
     (p.tasks.map((e, j) => item(e, j)).join("") ||
       btn("Priorität hinzufügen", () => edit(entry("Aufgabe", "")))) +
     '</div><div class="sectionhead"><h2>Tagesplan</h2>' +
@@ -355,6 +373,12 @@ function today() {
       : "")
   );
 }
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "daynote") return;
+  e.preventDefault();
+  const raw = e.target.querySelector("input").value.trim();
+  if (raw) edit(parse(raw));
+});
 document.addEventListener("change", async (e) => {
   if (e.target.id === "energy") await save({ ...s, energy: e.target.value });
 });
@@ -364,7 +388,11 @@ function item(e, j) {
       '<span class="tile ' +
       ai(e.area) +
       '">' +
-      (e.type === "Pflegeprodukt" && e.photo ? '<img style="width:100%;height:100%;object-fit:contain" alt="" src="' + esc(e.photo) + '">' : icon(ai(e.area))) +
+      (e.type === "Pflegeprodukt" && e.photo
+        ? '<img style="width:100%;height:100%;object-fit:contain" alt="" src="' +
+          esc(e.photo) +
+          '">'
+        : icon(ai(e.area))) +
       "</span><span><strong>" +
       esc(e.title) +
       "</strong><small>" +
@@ -481,6 +509,7 @@ function detail(e, proposedSlot = "") {
   );
 }
 function summary(e) {
+  if (e.performed) return e.value + " kg · " + e.performed + " Wdh.";
   if (e.origin && e.unit) return e.value + " " + e.unit;
   if (e.type === "Gewicht" && e.value == null) return "";
   return e.type === "Training"
@@ -525,7 +554,14 @@ function edit(e) {
     "Eintrag prüfen",
     field("Eintragstyp", "type", t, types) +
       field("Titel", "title", e.title) +
-      (t === "Pflegeprodukt" ? field("Verpackungsfoto dieser Variante (optional)", "photo", "", "file") : "") +
+      (t === "Pflegeprodukt"
+        ? field(
+            "Verpackungsfoto dieser Variante (optional)",
+            "photo",
+            "",
+            "file",
+          )
+        : "") +
       field("Bereich", "area", e.area, [...areas, "Dienst"]) +
       field("Wachabschnitt / Plandatum", "day", e.day, "date") +
       (t === "Training"
@@ -923,12 +959,12 @@ function sections() {
             area === "Hautpflege"
               ? "Pflegeprodukt"
               : area === "Haare & Kopfhaut"
-              ? "Pflege"
-              : area === "Karriere"
-                ? "Kontakt"
-                : area === "Training"
-                  ? "Training"
-                  : "Notiz",
+                ? "Pflege"
+                : area === "Karriere"
+                  ? "Kontakt"
+                  : area === "Training"
+                    ? "Training"
+                    : "Notiz",
             "",
             { area },
           ),
@@ -989,5 +1025,6 @@ if ("serviceWorker" in navigator)
     .register("./sw.js")
     .catch(() => toast("Offline-Installation noch ausstehend"));
 setInterval(() => {
-  if (!dlg.open) render();
+  if (!dlg.open && document.activeElement?.closest("#daynote") == null)
+    render();
 }, 60000);
