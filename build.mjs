@@ -1,5 +1,6 @@
 import { mkdir, copyFile, readFile } from "node:fs/promises";
 const list = [
+  "Designvergleich.html",
   "index.html",
   "style.css",
   "app.js",
