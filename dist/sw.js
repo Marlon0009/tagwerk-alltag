@@ -1,5 +1,5 @@
 const prefix = "tagwerk:" + self.registration.scope + ":",
-  cache = prefix + "1.0.3",
+  cache = prefix + "1.1.0",
   assets = [
     "./",
     "index.html",
