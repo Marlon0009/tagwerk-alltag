@@ -15,6 +15,8 @@ import {
 import { metrics, remindersFor, checkin } from "./reflection.js";
 import { icon, ai } from "./icons.js";
 import { extended } from "./extensions.js";
+import { journal } from "./journal.js";
+import { openCamera } from "./scanner.js";
 const db = await new Promise((ok, no) => {
   let r = indexedDB.open("tagwerk", 1);
   r.onupgradeneeded = () => r.result.createObjectStore("data");
@@ -96,7 +98,7 @@ const field = (label, n, v = "", type = "text") =>
         ">") +
   "</label>";
 function modal(t, html) {
-  dlg.classList.toggle("menusheet", t === "Menü");
+  dlg.className = "";
   dlg.innerHTML =
     '<header class="pair"><h2>' +
     esc(t) +
@@ -169,78 +171,23 @@ function go(p, a = "") {
 function heading(t) {
   return '<div class="sectionhead"><h2>' + esc(t) + "</h2></div>";
 }
-const navs = [
-  ["Heute", "sun"],
-  ["Verlauf", "history"],
-  ["Bereiche", "grid"],
-];
-function nav(m = false) {
-  return navs
-    .map(([n, k]) =>
-      btn(
-        icon(k) + "<span>" + n + "</span>",
-        () => go(n),
-        (m ? "" : "nav ") + (page === n ? "on" : ""),
-      ),
-    )
-    .join("");
-}
-function menu() {
-  const jump = (p, a = "") => {
-    dlg.close();
-    go(p, a);
-  };
-  modal(
-    "Menü",
-    [
-      btn("Eintrag schreiben", quick),
-      btn("Heute", () => jump("Heute")),
-      btn("Verlauf", () => jump("Verlauf")),
-      btn("Meine Bereiche", () => jump("Bereiche")),
-      btn("Training starten", ext.workout),
-      btn("Pflegeprodukte", () => jump("Bereiche", "Hautpflege")),
-      btn("Einstellungen und Daten", settings),
-    ].join(""),
-  );
-}
 function render() {
-  document.querySelector("#app").innerHTML =
-    '<div class="shell"><aside><div class="brand"><i class="mark"></i>Tagwerk</div><div class="sidecap">Arbeitsplatz</div>' +
-    nav() +
-    '<div class="sidegroup"><div class="sidecap">Meine Bereiche</div>' +
-    areas
-      .filter((a) => !s.hidden.includes(a))
-      .slice(0, 4)
-      .map((a) =>
-        btn(icon(ai(a)) + esc(a), () => go("Bereiche", a), "shortcut"),
-      )
-      .join("") +
-    '</div><div class="bottomside">' +
-    btn(icon("settings") + "Einstellungen", settings, "nav") +
-    '<div class="person"><span class="avatar">M</span><div>Marlon<small>Persönlicher Raum</small></div></div></div></aside><main class="page"><div class="topline"><span class="mobilehead"><i class="mark"></i>Tagwerk</span><span class="row crumb">' +
-    icon("layers") +
-    "Arbeitsplatz　/　" +
-    esc(page) +
-    '</span><div class="row"><span class="local">Lokal gespeichert</span>' +
-    (s.demo
-      ? btn("Beispiel · Einrichten", setup, "deskSetup")
-      : btn(
-          icon("settings"),
-          settings,
-          'deskSetup" aria-label="Einstellungen',
-        )) +
-    "</div></div>" +
-    btn("☰", menu, 'menukey" aria-label="Menü öffnen') +
-    (page === "Heute" ? today() : page === "Verlauf" ? history() : sections()) +
-    '</main><nav aria-label="Hauptnavigation" class="mobile">' +
-    nav(true) +
-    "</nav>" +
-    btn(
-      icon("plus") + "<span>Schnelleingabe</span>",
-      quick,
-      'fab" aria-label="Schnelleingabe',
-    ) +
-    "</div>";
+  let content = "";
+  if (page === "Tagesplan") content = today();
+  else if (page === "Verlauf") content = history();
+  else if (page === "Statistik")
+    content =
+      '<section class="diary"><h1>Statistik</h1>' +
+      areas
+        .filter((a) => s.entries.some((e) => e.area === a))
+        .map(
+          (a) =>
+            "<p>" + esc(a) + " · " + esc(metrics(s, a).join(" · ")) + "</p>",
+        )
+        .join("") +
+      "</section>";
+  else if (page === "Bereiche") content = sections();
+  document.querySelector("#app").innerHTML = ui.frame(page, content);
   pruneActions();
 }
 function today() {
@@ -374,10 +321,17 @@ function today() {
   );
 }
 document.addEventListener("submit", (e) => {
-  if (e.target.id !== "daynote") return;
+  if (!["daynote", "foodnote"].includes(e.target.id)) return;
   e.preventDefault();
   const raw = e.target.querySelector("input").value.trim();
-  if (raw) edit(parse(raw));
+  if (!raw) return;
+  let parsed = parse(raw);
+  if (e.target.id === "foodnote") {
+    if (parsed.type === "Notiz")
+      parsed = entry("Mahlzeit", raw, { area: "Ernährung" });
+    parsed.journal = true;
+  }
+  edit(parsed);
 });
 document.addEventListener("change", async (e) => {
   if (e.target.id === "energy") await save({ ...s, energy: e.target.value });
@@ -554,6 +508,14 @@ function edit(e) {
     "Eintrag prüfen",
     field("Eintragstyp", "type", t, types) +
       field("Titel", "title", e.title) +
+      (t === "Mahlzeit"
+        ? ["Protein", "Kohlenhydrate", "Fett", "Zucker", "Ballaststoffe"]
+            .map((label, i) => {
+              const key = ["protein", "carbs", "fat", "sugar", "fiber"][i];
+              return field(label + " in g (optional)", key, e[key], "number");
+            })
+            .join("")
+        : "") +
       (t === "Pflegeprodukt"
         ? field(
             "Verpackungsfoto dieser Variante (optional)",
@@ -598,7 +560,9 @@ function edit(e) {
       field(
         t === "Training" || t === "Gewicht"
           ? "Gewicht in kg"
-          : "Messwert (optional)",
+          : t === "Mahlzeit"
+            ? "Energie in kcal (optional)"
+            : "Messwert (optional)",
         "value",
         e.value,
         "number",
@@ -659,6 +623,14 @@ function edit(e) {
             throw Error("Bitte ein positives Gewicht eintragen.");
           if (!x.title || !x.day)
             throw Error("Bitte Titel und Datum ergänzen.");
+          if (t === "Mahlzeit") {
+            for (const k of ["protein", "carbs", "fat", "sugar", "fiber"]) {
+              x[k] = val(k) === "" ? null : Number(val(k));
+              if (x[k] !== null && (!Number.isFinite(x[k]) || x[k] < 0))
+                throw Error("Bitte nichtnegative Nährwerte eintragen.");
+            }
+            x.unit = "kcal";
+          }
           for (let k of [
             "start",
             "end",
@@ -1019,12 +991,81 @@ const ext = extended({
   summary,
   settings,
 });
+const ui = journal({
+  state: () => s,
+  save,
+  go,
+  btn,
+  modal,
+  dlg,
+  field,
+  val,
+  esc,
+  toast,
+  edit,
+  detail,
+  settings,
+  setup,
+  workout: ext.workout,
+  quick,
+  scanner: () =>
+    openCamera({ dlg, modal, btn, edit, state: () => s, field, val }),
+});
+dlg.addEventListener("click", (e) => {
+  if (e.target !== dlg) return;
+  const r = dlg.getBoundingClientRect();
+  if (
+    e.clientX < r.left ||
+    e.clientX > r.right ||
+    e.clientY < r.top ||
+    e.clientY > r.bottom
+  )
+    dlg.close();
+});
+let touchStart;
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    touchStart = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      target: e.target,
+    };
+  },
+  { passive: true },
+);
+document.addEventListener(
+  "touchend",
+  (e) => {
+    if (!touchStart) return;
+    const { x, y, target } = touchStart;
+    touchStart = null;
+    const dx = e.changedTouches[0].clientX - x,
+      dy = e.changedTouches[0].clientY - y;
+    if (!dlg.open && target.closest(".nutribar") && dy < -30) ui.sheet();
+    else if (
+      dlg.open &&
+      dlg.classList.contains("daysheet") &&
+      dy > 60 &&
+      Math.abs(dx) < dy &&
+      dlg.scrollTop === 0
+    )
+      dlg.close();
+    else if (
+      dlg.open &&
+      dlg.classList.contains("drawer") &&
+      dx < -60 &&
+      Math.abs(dy) < -dx
+    )
+      dlg.close();
+  },
+  { passive: true },
+);
 render();
 if ("serviceWorker" in navigator)
   navigator.serviceWorker
     .register("./sw.js")
     .catch(() => toast("Offline-Installation noch ausstehend"));
 setInterval(() => {
-  if (!dlg.open && document.activeElement?.closest("#daynote") == null)
-    render();
+  if (!dlg.open && document.activeElement?.closest("form") == null) render();
 }, 60000);
