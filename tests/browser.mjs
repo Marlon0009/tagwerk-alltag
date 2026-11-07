@@ -38,9 +38,66 @@ async function quick(t) {
 }
 try {
   await p.goto(base);
+  let groqRequests = 0;
+  await p.route(
+    "https://api.groq.com/openai/v1/chat/completions",
+    async (route) => {
+      groqRequests++;
+      const body = route.request().postDataJSON();
+      assert.deepEqual(JSON.parse(body.messages.at(-1).content), [
+        "Pflege aufgetragen",
+      ]);
+      await route.fulfill({
+        json: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ kategorien: ["Anwendung"] }),
+              },
+            },
+          ],
+        },
+      });
+    },
+  );
+  await navigate(p, "Einstellungen", "Groq für Texteingaben");
+  await fill("key", "simulierter-schluessel");
+  await click("Für diese Sitzung verwenden");
+  await p
+    .getByLabel("Eintrag schreiben", { exact: true })
+    .fill("Pflege aufgetragen");
+  await p.getByLabel("Eintrag schreiben", { exact: true }).press("Enter");
+  await p.locator("dialog fieldset").waitFor();
+  assert.equal(groqRequests, 0);
+  await click("Originaltext an Groq senden");
+  await p.locator("legend").getByText("Anwendung", { exact: true }).waitFor();
+  assert.equal(groqRequests, 1);
+  await click("Schließen");
+  await p.reload();
+  const mixed =
+    "Creme drauf, 2 Seiten von Beispielbuch gelesen, 1 Folge Beispielserie, neue Creme gekauft, übermorgen und den Tag danach Arbeit Nachtschicht";
+  await p.getByLabel("Eintrag schreiben", { exact: true }).fill(mixed);
+  await p.getByLabel("Eintrag schreiben", { exact: true }).press("Enter");
+  assert.equal(await p.locator("dialog fieldset").count(), 6);
+  await click("Auswahl speichern");
+  await p.getByRole("alert").waitFor();
+  assert.equal(await p.locator(".foodrow").count(), 0);
+  for (const i of [4, 5]) {
+    await fill("from" + i, "22:00");
+    await fill("to" + i, "06:00");
+  }
+  await click("Auswahl speichern");
+  await p.locator("dialog").waitFor({ state: "hidden" });
+  assert.equal(await p.locator(".foodrow").count(), 4);
+  await p.reload();
+  await p.locator(".foodrow").first().waitFor();
+  assert.equal(await p.locator(".foodrow").count(), 4);
+  console.log(
+    "OK: Gemischter Satz, fehlende Zeiten, atomare Speicherung, Neustart",
+  );
   assert.equal(await p.locator("aside,.mobile,.fab").count(), 0);
-  await p.getByPlaceholder("Essen eingeben...").fill("Testmahlzeit");
-  await p.getByPlaceholder("Essen eingeben...").press("Enter");
+  await p.getByLabel("Eintrag schreiben", { exact: true }).fill("Testmahlzeit");
+  await p.getByLabel("Eintrag schreiben", { exact: true }).press("Enter");
   await fill("value", "220");
   await fill("protein", "5");
   await click("Eintrag speichern");

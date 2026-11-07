@@ -16,6 +16,7 @@ import { metrics, remindersFor, checkin } from "./reflection.js";
 import { icon, ai } from "./icons.js";
 import { extended } from "./extensions.js";
 import { journal } from "./journal.js";
+import { everyday } from "./everyday-ui.js";
 import { openCamera } from "./scanner.js";
 const db = await new Promise((ok, no) => {
   let r = indexedDB.open("tagwerk", 1);
@@ -325,13 +326,7 @@ document.addEventListener("submit", (e) => {
   e.preventDefault();
   const raw = e.target.querySelector("input").value.trim();
   if (!raw) return;
-  let parsed = parse(raw);
-  if (e.target.id === "foodnote") {
-    if (parsed.type === "Notiz")
-      parsed = entry("Mahlzeit", raw, { area: "Ernährung" });
-    parsed.journal = true;
-  }
-  edit(parsed);
+  writing.input(raw);
 });
 document.addEventListener("change", async (e) => {
   if (e.target.id === "energy") await save({ ...s, energy: e.target.value });
@@ -484,6 +479,9 @@ function summary(e) {
             : "";
 }
 const types = [
+  "Lesen",
+  "Serie",
+  "Pflegeroutine",
   "Pflegeprodukt",
   "Notiz",
   "Aufgabe",
@@ -731,7 +729,7 @@ function quick() {
         "Eingabe prüfen",
         () => {
           if (!val("text").trim()) throw Error("Bitte Text eingeben.");
-          edit(parse(val("text").trim()));
+          writing.input(val("text").trim());
         },
         "primary",
       ) +
@@ -991,7 +989,20 @@ const ext = extended({
   summary,
   settings,
 });
+const writing = everyday({
+  state: () => s,
+  save,
+  modal,
+  btn,
+  field,
+  val,
+  esc,
+  dlg,
+  edit,
+  toast,
+});
 const ui = journal({
+  configureGroq: writing.configure,
   state: () => s,
   save,
   go,

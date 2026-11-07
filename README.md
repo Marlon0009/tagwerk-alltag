@@ -2,6 +2,10 @@
 
 ### Bedienung ab Version 2
 
+Ab 2.1 versteht das Feld unter „Heute“ auch mehrere Alltagsaktionen auf einmal. Anwendungen, Packungskäufe, Seiten, Folgen und Dienste erscheinen in einer gemeinsamen Vorschau. Datum, Titel, Menge und Schichtzeiten sind vor dem Speichern änderbar. Eine Zeile abwählen, um sie auszulassen. „Aufgabe [Titel] erledigt“ erlaubt die Auswahl eines vorhandenen offenen Eintrags. Erst „Auswahl speichern“ schreibt die gesamte Auswahl in einer lokalen Transaktion.
+
+Unter Einstellungen → Groq für Texteingaben kann ein eigener API-Schlüssel für die geöffnete Sitzung hinterlegt werden. Nur „Originaltext an Groq senden“ sendet den eingegebenen Satz bzw. seine Textabschnitte und eine Kategorienliste an api.groq.com. Der Schlüssel liegt nur im Arbeitsspeicher. Es gelten Tarif und Limits des eigenen Groq-Kontos. Ohne Verbindung, bei einem Fehler oder ganz ohne Schlüssel funktioniert die lokale Vorschau.
+
 Die App startet im hellen Tagebuch. Text unter **Heute** eingeben und mit der Eingabetaste bestätigen. Links oben öffnet sich die Seitennavigation. Rechts oben startet der lokale Barcode-, Etikett- und Fotoscanner. Kamerazugriff wird beim Öffnen angefragt. Etikett und Foto übernehmen das Bild in einen editierbaren Eintrag. Nährwerte werden von Hand ergänzt. Unbekannte Barcodes können einem Produkt zugeordnet werden.
 
 Die Nährwertleiste unten lässt sich antippen oder hochziehen. Unter **Deine Daten und Ziele** liegen die Ersteinrichtung, Tagesplanung und Bereiche. **Anzeige anpassen** wechselt zwischen Hell und Dunkel. Die 2829 kcal der Beispielansicht sind ein fiktives Anzeigeziel. Das persönliche Ziel ist optional. Protein, Kohlenhydrate und Fett werden aus eingegebenen Werten summiert. Fehlende Angaben erscheinen als Gedankenstrich. Unter **Einstellungen → Daten und Sicherung** liegen Datei- und Drive-Sicherungen. Der Chat beantwortet Fragen zum lokalen Tagebuch anhand einfacher Regeln.

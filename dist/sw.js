@@ -1,10 +1,11 @@
 const prefix = "tagwerk:" + self.registration.scope + ":",
-  cache = prefix + "2.0.0",
+  cache = prefix + "2.1.0",
   assets = [
     "./",
     "index.html",
     "journal.css",
     "journal.js",
+    "everyday.mjs","everyday-ui.js",
     "scanner.js",
     "vendor/zxing-browser.min.js",
     "style.css",

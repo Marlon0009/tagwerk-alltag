@@ -1,5 +1,6 @@
 import { date, entry, plan } from "./core.mjs";
 export function journal({
+  configureGroq,
   state,
   save,
   go,
@@ -65,6 +66,7 @@ export function journal({
         btn("Tagesplanung", () => navigate("Tagesplan")) +
         btn("Meine Bereiche", () => navigate("Bereiche")) +
         btn("Schnelleingabe", quick) +
+        btn("Groq für Texteingaben", configureGroq) +
         btn("Anzeige anpassen", appearance) +
         btn("Daten und Sicherung", settings) +
         "</div>",
@@ -186,7 +188,7 @@ export function journal({
       (e) => e.day === date() && (e.journal || e.type === "Mahlzeit"),
     );
     return (
-      '<section class="diary"><h1>Heute</h1><form id="foodnote"><input autocomplete="off" aria-label="Essen oder Eintrag eingeben" placeholder="Essen eingeben..." required><button aria-label="Eingabe prüfen">↵</button></form>' +
+      '<section class="diary"><h1>Heute</h1><form id="foodnote"><input autocomplete="off" aria-label="Eintrag schreiben" placeholder="Eintrag schreiben..." required><button aria-label="Eingabe prüfen">↵</button></form>' +
       entries
         .map((e) =>
           btn(
@@ -195,7 +197,9 @@ export function journal({
               e.type === "Mahlzeit" &&
               !state().hideKcal
                 ? "<small>" + esc(e.value) + " kcal</small>"
-                : ""),
+                : ["Lesen","Serie"].includes(e.type) && Number.isFinite(e.value)
+                  ? "<small>"+esc(e.value)+" "+esc(e.value===1&&e.type==="Serie"?"Folge":e.unit)+"</small>"
+                  : e.kind==="Kauf" ? "<small>Gekauft</small>" : ""),
             () => detail(e),
             "foodrow",
           ),

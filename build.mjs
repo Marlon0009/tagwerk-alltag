@@ -4,6 +4,7 @@ const list = [
   "index.html",
   "journal.css",
   "journal.js",
+  "everyday.mjs","everyday-ui.js",
   "scanner.js",
   "vendor/zxing-browser.min.js",
   "vendor/LICENSE",

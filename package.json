@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/core.test.mjs",
+    "test": "node --test tests/core.test.mjs tests/everyday.test.mjs",
     "start": "node server.mjs",
     "dev": "node server.mjs"
   },
