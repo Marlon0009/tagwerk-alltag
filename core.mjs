@@ -1,5 +1,6 @@
 export const areas = [
   "Studium",
+  "Freizeit",
   "Training",
   "Schlaf & Energie",
   "Karriere",

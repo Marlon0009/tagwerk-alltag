@@ -939,7 +939,26 @@ export function extended({
     );
   }
   function area(a, arr) {
-    if (a === "Hautpflege") return products(arr);
+    if (a === "Hautpflege")
+      return (
+        btn("Pflegeroutine ansehen", () =>
+          modal(
+            "Pflegeroutine",
+            "<h3>Nach dem Aufstehen</h3><p>Bei Bedarf mit lauwarmem Wasser abspülen. Eine parfümfreie Feuchtigkeitscreme auf leicht feuchte Haut auftragen. Vor Tageslicht im Freien einen breitbandigen Sonnenschutz ab LSF 30 als letzten Schritt verwenden. Draußen nach Packungsanweisung erneuern.</p>" +
+              "<h3>Vor dem Hauptschlaf</h3><p>Sonnenschutz und Schmutz mit einem milden, parfümfreien Reiniger und den Fingerspitzen abwaschen. Vorsichtig trocken tupfen und eincremen.</p>" +
+              "<p>Neue Produkte einzeln einführen. Bei anhaltender Rötung, Schuppung oder Brennen dermatologisch abklären lassen.</p>" +
+              '<details><summary>Warum?</summary><p>Die American Academy of Dermatology empfiehlt bei trockener Haut milde Reinigung, parfümfreie Creme auf noch feuchter Haut und breitbandigen Sonnenschutz. Geprüft am 07.11.2026. <a href="https://www.aad.org/public/everyday-care/skin-care-basics/dry/dermatologists-tips-relieve-dry-skin" target="_blank" rel="noopener">Quelle öffnen</a></p></details>' +
+              btn("Creme aufgetragen", () =>
+                put(
+                  entry("Pflegeroutine", "Gesichtscreme aufgetragen", {
+                    area: a,
+                    journal: true,
+                  }),
+                ),
+              ),
+          ),
+        ) + products(arr)
+      );
     if (a === "Haare & Kopfhaut")
       return (
         '<div class="actions">' +
