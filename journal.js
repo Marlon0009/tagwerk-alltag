@@ -1,5 +1,7 @@
 import { date, entry, plan } from "./core.mjs";
 export function journal({
+  motionOpened,
+  motionClose,
   configureGroq,
   state,
   save,
@@ -26,13 +28,23 @@ export function journal({
   function overlay(name, html, kind) {
     modal(name, html);
     dlg.className = kind;
+    const control =
+      dlg.querySelector(".selected") ||
+      dlg.querySelector(".sheethandle,.drawerclose");
+    control?.focus({ preventScroll: true });
+    motionOpened();
   }
   function drawer() {
     const nav = (label, page) =>
-      btn(label, () => navigate(page), current === page ? "selected" : "");
+      btn(
+        label,
+        () => navigate(page),
+        current === page ? 'selected" aria-current="page' : "",
+      );
     overlay(
       "Navigation",
-      "<nav>" +
+      btn("Menü schließen", motionClose, "drawerclose") +
+        "<nav>" +
         nav("Tagebuch", "Heute") +
         nav("Chat", "Chat") +
         "<hr>" +
@@ -129,7 +141,11 @@ export function journal({
   function sheet() {
     overlay(
       "Tagesübersicht",
-      '<div class="grab"></div>' +
+      btn(
+        '<span class="grab"></span>',
+        motionClose,
+        'sheethandle" aria-label="Tagesübersicht schließen',
+      ) +
         btn("Über deinen Tag chatten　→", () => navigate("Chat"), "askday") +
         '<div class="sheetrows">' +
         btn("Deine Daten und Ziele", goals) +
@@ -197,9 +213,18 @@ export function journal({
               e.type === "Mahlzeit" &&
               !state().hideKcal
                 ? "<small>" + esc(e.value) + " kcal</small>"
-                : ["Lesen","Serie"].includes(e.type) && Number.isFinite(e.value)
-                  ? "<small>"+esc(e.value)+" "+esc(e.value===1&&e.type==="Serie"?"Folge":e.unit)+"</small>"
-                  : e.kind==="Kauf" ? "<small>Gekauft</small>" : ""),
+                : ["Lesen", "Serie"].includes(e.type) &&
+                    Number.isFinite(e.value)
+                  ? "<small>" +
+                    esc(e.value) +
+                    " " +
+                    esc(
+                      e.value === 1 && e.type === "Serie" ? "Folge" : e.unit,
+                    ) +
+                    "</small>"
+                  : e.kind === "Kauf"
+                    ? "<small>Gekauft</small>"
+                    : ""),
             () => detail(e),
             "foodrow",
           ),
