@@ -16,6 +16,7 @@ import { metrics, remindersFor, checkin } from "./reflection.js";
 import { icon, ai } from "./icons.js";
 import { extended } from "./extensions.js";
 import { journal } from "./journal.js";
+import { panelMotion } from "./panel-motion.js";
 import { everyday } from "./everyday-ui.js";
 import { openCamera } from "./scanner.js";
 const db = await new Promise((ok, no) => {
@@ -99,6 +100,8 @@ const field = (label, n, v = "", type = "text") =>
         ">") +
   "</label>";
 function modal(t, html) {
+  motion.reset();
+  dlg.setAttribute("aria-label", t);
   dlg.className = "";
   dlg.innerHTML =
     '<header class="pair"><h2>' +
@@ -1002,6 +1005,8 @@ const writing = everyday({
   toast,
 });
 const ui = journal({
+  motionOpened: () => motion.opened(),
+  motionClose: () => motion.close(),
   configureGroq: writing.configure,
   state: () => s,
   save,
@@ -1033,45 +1038,7 @@ dlg.addEventListener("click", (e) => {
   )
     dlg.close();
 });
-let touchStart;
-document.addEventListener(
-  "touchstart",
-  (e) => {
-    touchStart = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-      target: e.target,
-    };
-  },
-  { passive: true },
-);
-document.addEventListener(
-  "touchend",
-  (e) => {
-    if (!touchStart) return;
-    const { x, y, target } = touchStart;
-    touchStart = null;
-    const dx = e.changedTouches[0].clientX - x,
-      dy = e.changedTouches[0].clientY - y;
-    if (!dlg.open && target.closest(".nutribar") && dy < -30) ui.sheet();
-    else if (
-      dlg.open &&
-      dlg.classList.contains("daysheet") &&
-      dy > 60 &&
-      Math.abs(dx) < dy &&
-      dlg.scrollTop === 0
-    )
-      dlg.close();
-    else if (
-      dlg.open &&
-      dlg.classList.contains("drawer") &&
-      dx < -60 &&
-      Math.abs(dy) < -dx
-    )
-      dlg.close();
-  },
-  { passive: true },
-);
+const motion = panelMotion(dlg, ui.sheet);
 render();
 if ("serviceWorker" in navigator)
   navigator.serviceWorker
