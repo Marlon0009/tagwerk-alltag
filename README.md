@@ -1,5 +1,11 @@
 # Tagwerk für Marlon
 
+### Bedienung ab Version 2
+
+Die App startet im hellen Tagebuch. Text unter **Heute** eingeben und mit der Eingabetaste bestätigen. Links oben öffnet sich die Seitennavigation. Rechts oben startet der lokale Barcode-, Etikett- und Fotoscanner. Kamerazugriff wird beim Öffnen angefragt. Etikett und Foto übernehmen das Bild in einen editierbaren Eintrag. Nährwerte werden von Hand ergänzt. Unbekannte Barcodes können einem Produkt zugeordnet werden.
+
+Die Nährwertleiste unten lässt sich antippen oder hochziehen. Unter **Deine Daten und Ziele** liegen die Ersteinrichtung, Tagesplanung und Bereiche. **Anzeige anpassen** wechselt zwischen Hell und Dunkel. Die 2829 kcal der Beispielansicht sind ein fiktives Anzeigeziel. Das persönliche Ziel ist optional. Protein, Kohlenhydrate und Fett werden aus eingegebenen Werten summiert. Fehlende Angaben erscheinen als Gedankenstrich. Unter **Einstellungen → Daten und Sicherung** liegen Datei- und Drive-Sicherungen. Der Chat beantwortet Fragen zum lokalen Tagebuch anhand einfacher Regeln.
+
 **Auf dem iPhone:** [Tagwerk in Safari öffnen](https://marlon0009.github.io/tagwerk-alltag/), über **Teilen → Zum Home-Bildschirm** installieren und einmal online vom neuen Symbol starten. **Beispiel · Einrichten** öffnet die persönliche Einrichtung.
 
 ## Start in zwei Minuten

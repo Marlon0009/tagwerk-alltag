@@ -21,19 +21,46 @@ p.on("pageerror", (e) => errors.push(e.message));
 const button = (name) => p.getByRole("button", { name, exact: true }),
   click = (n) => button(n).click(),
   fill = (name, v) => p.locator('dialog [name="' + name + '"]').fill(v);
+async function navigate(view, ...labels) {
+  for (const name of ["Menü öffnen", ...labels])
+    await view.getByRole("button", { name, exact: true }).click();
+}
 async function settings() {
   if (await p.locator("dialog[open]").count()) await click("Schließen");
-  await p.locator(".mobile").getByText("Bereiche").click();
+  await navigate(p, "Einstellungen", "Meine Bereiche");
   await click("Einstellungen & Sicherung");
 }
 async function quick(t) {
-  await click("Schnelleingabe");
+  await navigate(p, "Einstellungen", "Schnelleingabe");
   await fill("text", t);
   await click("Eingabe prüfen");
   await click("Eintrag speichern");
 }
 try {
   await p.goto(base);
+  assert.equal(await p.locator("aside,.mobile,.fab").count(), 0);
+  await p.getByPlaceholder("Essen eingeben...").fill("Testmahlzeit");
+  await p.getByPlaceholder("Essen eingeben...").press("Enter");
+  await fill("value", "220");
+  await fill("protein", "5");
+  await click("Eintrag speichern");
+  await p.locator(".foodrow").filter({ hasText: "Testmahlzeit" }).waitFor();
+  assert.match(await p.locator(".nutribar").innerText(), /220 \/ 2829 kcal/);
+  assert.match(await p.locator(".nutribar").innerText(), /5g/);
+  await click("Scanner öffnen");
+  await click("Etikett");
+  await click("Foto");
+  await click("Barcode");
+  await click("Barcode scannen");
+  await fill("code", "4006381333931");
+  await click("Übernehmen");
+  assert.match(await p.locator("[name=note]").inputValue(), /4006381333931/);
+  await click("Schließen");
+  console.log(
+    "OK: Tagebuch, Nährwertleiste, Kameramodi, manuelle Barcodeübernahme",
+  );
+  await click("Tagesübersicht öffnen");
+  await click("Deine Daten und Ziele");
   await click("Beispiel · Einrichten");
   await fill("goals", "IU-Hausarbeit");
   await click("Meinen Tag öffnen");
@@ -49,7 +76,7 @@ try {
   });
   await ctx.setOffline(true);
   await p.reload();
-  await p.locator(".mobile").getByText("Bereiche").click();
+  await navigate(p, "Einstellungen", "Meine Bereiche");
   await p.locator(".areaGrid").getByText("Training", { exact: true }).click();
   await p.getByRole("button", { name: /Latzug · zuletzt 55 kg/ }).waitFor();
   console.log("OK: Latzug nach Offline-Neustart");
@@ -97,7 +124,7 @@ try {
   await click("Sitzung trennen");
   await click("Schließen");
   console.log("OK: abgebrochener Upload ohne Erfolgsstatus");
-  await p.locator(".mobile").getByText("Bereiche").click();
+  await navigate(p, "Einstellungen", "Meine Bereiche");
   await p.locator(".areaGrid").getByText("Haare & Kopfhaut").click();
   await click("Eintrag");
   await fill("title", "Fiktive Beobachtung");
@@ -112,18 +139,18 @@ try {
   console.log("OK: Arztübersicht auf ausgewählte Kopfhauteinträge begrenzt");
   await click("Schließen");
   await p.setViewportSize({ width: 320, height: 640 });
-  await p.locator(".mobile").getByText("Heute").click();
+  await navigate(p, "Tagebuch");
   await p.addStyleTag({ content: "body{font-size:24px}" });
   assert.ok(
     await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
   );
-  await click("Schnelleingabe");
+  await navigate(p, "Einstellungen", "Schnelleingabe");
   await click("Schließen");
   console.log("OK: 320 Pixel, vergrößerte Schrift, Dialog bedienbar");
   const clean = await b.newContext(),
     cp = await clean.newPage();
   await cp.goto(base);
-  await cp.locator("aside").getByText("Einstellungen").click();
+  await navigate(cp, "Einstellungen", "Daten und Sicherung");
   await cp
     .getByRole("button", { name: "Wiederherstellen", exact: true })
     .click();
@@ -136,7 +163,7 @@ try {
   await cp.getByText("Vorschau prüfen", { exact: true }).click();
   await cp.getByText("Diesen Stand wiederherstellen").click();
   await cp.reload();
-  await cp.locator("aside").getByText("Training", { exact: true }).click();
+  await navigate(cp, "Einstellungen", "Meine Bereiche", "Training");
   await cp.getByRole("button", { name: /Latzug · zuletzt 55 kg/ }).waitFor();
   console.log("OK: leere Installation aus Datei wiederhergestellt");
   await cp.evaluate(async () => {
@@ -166,14 +193,14 @@ try {
     db.close();
   });
   await cp.reload();
-  await cp.locator("aside").getByText("Verlauf", { exact: true }).click();
+  await navigate(cp, "Verlauf");
   await cp.getByRole("button", { name: /Alte Notiz/ }).click();
   await cp.getByRole("button", { name: "Bearbeiten", exact: true }).click();
   await cp.locator("[name=note]").fill("Nach Update bearbeitet");
   await cp.getByRole("button", { name: "Eintrag speichern" }).click();
   await cp.getByText("Eintrag gespeichert", { exact: true }).waitFor();
   console.log("OK: IndexedDB-Altbestand nach Migration bearbeitbar");
-  await cp.locator("aside").getByText("Karriere", { exact: true }).click();
+  await navigate(cp, "Einstellungen", "Meine Bereiche", "Karriere");
   await cp.getByRole("button", { name: "E-Mail-Auftrag", exact: true }).click();
   for (const [name, value] of Object.entries({
     people: "Firma Beispiel",
